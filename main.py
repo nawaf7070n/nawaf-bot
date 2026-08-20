@@ -1,81 +1,54 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse
-import uvicorn, os
+import os
+import uvicorn
 
 app = FastAPI()
 
-# 🔧 حط هنا أكواد الأفلييت حقك بعد ما تسجل
-MY_AFFILIATE = {
-    "amazon": "nawaf-21",  # من Amazon Associates
-    "noon": "YOUR_ARABCLICKS_ID",  # من ArabClicks
-    "temu": "YOUR_TEMU_ID"
-}
-
-# قاعدة منتجات تجريبية - أنت تقدر تضيف من كل المنصات
+# منتجات تجريبية - مجمع شامل
 products = [
-    {"name": "ساعة ذكية", "noon_price": 199, "amazon_price": 189, "temu_price": 89, "best": "temu", "image": "⌚", "rating": 4.7},
-    {"name": "سماعة بلوتوث", "noon_price": 149, "amazon_price": 129, "temu_price": 59, "best": "temu", "image": "🎧", "rating": 4.5},
-    {"name": "ايفون 15", "noon_price": 3299, "amazon_price": 3199, "temu_price": 0, "best": "amazon", "image": "📱", "rating": 4.9},
+    {"name": "ساعة ذكية", "noon": 199, "amazon": 189, "best": "amazon"},
+    {"name": "سماعة بلوتوث", "noon": 149, "amazon": 129, "best": "amazon"},
+    {"name": "ايفون 15", "noon": 3299, "amazon": 3199, "best": "amazon"},
 ]
-
-def get_aff_link(store, product_name):
-    # هنا يتركب رابط الأفلييت حقك تلقائي
-    base = f"https://www.{store}.com/s?k={product_name.replace(' ', '+')}"
-    if store == "amazon":
-        return f"{base}&tag={MY_AFFILIATE['amazon']}"
-    return base  # لباقي المتاجر من ArabClicks
 
 @app.get("/", response_class=HTMLResponse)
 def home(q: str = ""):
-    q_lower = q.lower()
-    filtered = [p for p in products if q_lower in p["name"].lower()] if q else products
-    
-    cards = ""
+    filtered = [p for p in products if q.lower() in p["name"].lower()] if q else products
+    cards_html = ""
     for p in filtered:
-        cards += f"""
-        <div class="card">
-            <div style="font-size:40px">{p['image']}</div>
-            <h2>{p['name']} ⭐ {p['rating']}</h2>
-            <div class="prices">
-                <div class="price {'best' if p['best']=='noon' else ''}">نون: {p['noon_price']} ريال <a href="{get_aff_link('noon', p['name'])}" target="_blank" class="buy">شراء</a></div>
-                <div class="price {'best' if p['best']=='amazon' else ''}">أمازون: {p['amazon_price']} ريال <a href="{get_aff_link('amazon', p['name'])}" target="_blank" class="buy">شراء - أرخص</a></div>
-                {f"<div class='price {'best' if p['best']=='temu' else ''}'>تيمو: {p['temu_price']} ريال <a href='{get_aff_link('temu', p['name'])}' target='_blank' class='buy'>شراء</a></div>" if p['temu_price']>0 else ""}
-            </div>
-            <div class="badge">💰 عمولتك: 10% من أي متجر يختاره العميل</div>
+        cards_html += f"""
+        <div style="background:#1e293b;margin:10px;padding:15px;border-radius:10px;border:1px solid #334155">
+            <h3>{p['name']}</h3>
+            <p>نون: {p['noon']} ريال | امازون: {p['amazon']} ريال</p>
+            <p style="color:#10b981">الارخص: {p['best']}</p>
+            <a href="https://www.amazon.sa/s?k={p['name']}" target="_blank" style="background:#10b981;color:white;padding:8px 12px;border-radius:5px;text-decoration:none">اشتر من امازون</a>
+            <a href="https://www.noon.com/saudi-ar/search?q={p['name']}" target="_blank" style="background:#f59e0b;color:white;padding:8px 12px;border-radius:5px;text-decoration:none">اشتر من نون</a>
         </div>
         """
 
     return f"""
     <html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>سوق نواف الشامل - قارن أسعار كل المتاجر</title>
-    <style>
-        body{{font-family:Tahoma;background:#0f172a;color:white;margin:0}}
-        .header{{background:linear-gradient(90deg,#3b82f6,#10b981);padding:20px;text-align:center}}
-        .search-box{{background:#1e293b;padding:20px;text-align:center;position:sticky;top:0;z-index:10}}
-        .search-box input{{width:70%;padding:15px;border-radius:30px;border:none;font-size:18px;text-align:center}}
-        .search-box button{{padding:15px 25px;border-radius:30px;border:none;background:#f59e0b;color:white;font-weight:bold;cursor:pointer;margin-right:10px}}
-        .container{{max-width:900px;margin:auto;padding:15px}}
-        .card{{background:#1e293b;margin:15px 0;padding:20px;border-radius:15px;border:1px solid #334155}}
-        .prices{{display:flex;flex-direction:column;gap:10px;margin:15px 0}}
-        .price{{background:#0f172a;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}}
-        .price.best{{border:2px solid #10b981;background:#052e1a}}
-        .buy{{background:#10b981;color:white;padding:8px 15px;border-radius:8px;text-decoration:none}}
-        .badge{{background:#334155;padding:5px 10px;border-radius:20px;font-size:12px;color:#94a3b8}}
-        .add-form{{background:#1e293b;padding:20px;border-radius:15px;margin:20px 0}}
-        .add-form input{{width:90%;padding:12px;margin:8px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white}}
-        .btn{{background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;cursor:pointer}}
-    </style></head>
-    <body>
-        <div class="header">
-            <h1>🛒 سوق نواف الشامل</h1>
-            <p>ابحث مرة وحدة - نقارن لك السعر في نون وأمازون وتيمو وشي إن و 1000 متجر!</p>
-            <p>🇸🇦 عربي | 🇺🇸 English | 🌍 يستهدف العالم كله</p>
-        </div>
-        <div class="search-box">
-            <form method="get">
-                <input name="q" value="{q}" placeholder="وش تبي تشتري؟ مثلا: ساعة، ايفون، سماعة...">
-                <button type="submit">🔍 قارن الأسعار</button>
-            </form>
-        </div>
-        <div class="container">
-            <h2>🔥
+    <title>سوق نواف الشامل</title>
+    <style>body{{font-family:Tahoma;background:#0f172a;color:white;margin:0;padding:0}} .header{{background:#3b82f6;padding:20px;text-align:center}} .container{{max-width:800px;margin:auto;padding:15px}} input{{width:70%;padding:12px;border-radius:8px;border:none}} button{{padding:12px;background:#f59e0b;color:white;border:none;border-radius:8px}}</style>
+    </head><body>
+    <div class="header"><h1>سوق نواف الشامل</h1><p>قارن الاسعار من كل المتاجر</p></div>
+    <div class="container">
+        <form method="get" style="text-align:center;margin:20px"><input name="q" value="{q}" placeholder="ابحث: ساعة، ايفون..."><button type="submit">بحث</button></form>
+        <h2>المنتجات ({len(filtered)})</h2>
+        {cards_html}
+        <hr style="margin:20px 0">
+        <h3>اضف منتج جديد</h3>
+        <form action="/add" method="post"><input name="name" placeholder="اسم المنتج" required><input name="noon" placeholder="سعر نون" type="number" required><input name="amazon" placeholder="سعر امازون" type="number" required><button type="submit">اضف</button></form>
+    </div></body></html>
+    """
+
+@app.post("/add", response_class=HTMLResponse)
+def add(name: str = Form(...), noon: int = Form(...), amazon: int = Form(...)):
+    best = "amazon" if amazon < noon else "noon"
+    products.insert(0, {"name": name, "noon": noon, "amazon": amazon, "best": best})
+    return '<html><head><meta http-equiv="refresh" content="1;url=/"></head><body>تمت الاضافة - جاري التحويل...</body></html>'
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
