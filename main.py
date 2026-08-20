@@ -1,81 +1,58 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-
 app = FastAPI()
-
 HTML = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>أفضل صفقة - نقارن الأسعار ونجيب لك الأرخص</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>أفضل صفقة</title>
 <style>
 body{margin:0;font-family:system-ui;background:#080808;color:#fff}
-.header{background:#0a0a0a;padding:30px 20px;text-align:center;border-bottom:2px solid #ff6a00}
-.header h1{margin:10px 0 0;font-size:40px;font-weight:900}
-.header h1 span{color:#ff6a00}
-.header p{color:#aaa;font-size:18px;margin-top:8px}
-.container{max-width:900px;margin:0 auto;padding:20px}
-.search{display:flex;gap:10px;margin:20px 0;background:#151515;padding:12px;border-radius:14px;border:1px solid #222}
-.search input{flex:1;padding:14px;border-radius:10px;border:1px solid #333;background:#0f0f0f;color:#fff;font-size:16px}
-.search button{padding:14px 28px;border-radius:10px;border:none;background:#ff6a00;color:#fff;font-weight:800;cursor:pointer}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:15px;margin-top:20px}
-.card{background:#141414;border:1px solid #222;border-radius:14px;padding:16px}
-.card h3{margin:0 0 8px}
-.price{color:#ff6a00;font-weight:800;font-size:20px}
-.store{color:#777;font-size:13px;margin-top:5px}
-.no-results{text-align:center;color:#777;margin-top:30px;display:none}
-.footer{text-align:center;padding:30px;color:#555;border-top:1px solid #1a1a1a;margin-top:30px}
+.header{background:#0a0a0a;padding:30px;text-align:center;border-bottom:2px solid #ff6a00}
+.header h1{font-size:42px;margin:0} .header h1 span{color:#ff6a00}
+.header p{color:#aaa;margin-top:8px}
+.container{max-width:900px;margin:0 auto;padding:15px}
+.search{display:flex;gap:8px;background:#151515;padding:10px;border-radius:12px}
+.search input{flex:1;padding:12px;border-radius:8px;border:1px solid #333;background:#000;color:#fff}
+.search button{padding:12px 22px;border-radius:8px;border:none;background:#ff6a00;color:#fff;font-weight:800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.card{background:#151515;border:1px solid #222;border-radius:12px;padding:12px}
+.price{color:#ff6a00;font-weight:800}
 </style>
 </head>
 <body>
-<div class="header">
-<div style="font-size:60px">🛒🏷️</div>
-<h1><span>أفضل</span> صفقة</h1>
-<p>نقارن الأسعار ونجيب لك الأرخص</p>
-</div>
+<div class="header"><div style="font-size:50px">🛒</div><h1><span>أفضل</span> صفقة</h1><p>نقارن الأسعار ونجيب لك الأرخص</p></div>
 <div class="container">
-<div class="search">
-<input id="q" placeholder="ابحث: ايفون، ساعة، لابتوب..." onkeyup="if(event.key==='Enter')search()">
-<button onclick="search()">بحث</button>
-</div>
-<div id="cards" class="cards"></div>
-<div id="no" class="no-results">ما لقينا شي.. جرب كلمة ثانية</div>
-<div class="footer">أفضل صفقة © 2026</div>
+<div class="search"><input id="q" placeholder="ايفون، ساعة، لابتوب..."><button onclick="doSearch()">بحث</button></div>
+<div id="grid" class="grid"></div>
 </div>
 <script>
-const products=[
-{name:"ايفون 15 برو ماكس",price:"4299 ر.س",store:"جرير + اكسترا + نون"},
-{name:"ساعة ذكية",price:"199 ر.س",store:"امازون + نون"},
-{name:"لابتوب HP",price:"2499 ر.س",store:"جرير"},
-{name:"سماعة بلوتوث",price:"89 ر.س",store:"نون + امازون"},
-{name:"ستاند جوال",price:"25 ر.س",store:"امازون"},
-{name:"ايربودز برو",price:"799 ر.س",store:"اكسترا"},
-{name:"شاحن سريع",price:"49 ر.س",store:"نون"}
+let items=[
+{name:"ايفون 15 برو ماكس - 256GB",price:"4299 ر.س",shop:"جرير"},
+{name:"ايفون 15 عادي",price:"3299 ر.س",shop:"اكسترا"},
+{name:"ساعة ذكية T800",price:"79 ر.س",shop:"نون"},
+{name:"ساعة ابل 9",price:"1599 ر.س",shop:"جرير"},
+{name:"لابتوب HP",price:"2299 ر.س",shop:"امازون"},
+{name:"ايربودز برو",price:"699 ر.س",shop:"نون"},
+{name:"شاحن انكر سريع",price:"59 ر.س",shop:"امازون"},
+{name:"سماعة بلوتوث",price:"89 ر.س",shop:"نون"}
 ];
-function render(list){
- const c=document.getElementById('cards');
- const n=document.getElementById('no');
- c.innerHTML='';
- if(list.length===0){n.style.display='block';return}
- n.style.display='none';
- list.forEach(p=>{
-  c.innerHTML+=`<div class="card"><h3>${p.name}</h3><div class="price">${p.price}</div><div class="store">${p.store}</div></div>`;
- });
+function show(list){
+let g=document.getElementById('grid');
+g.innerHTML='';
+if(list.length==0){g.innerHTML='<p style=color:#777;text-align:center;grid-column:1/3>ما لقينا نتائج - جرب كلمة ثانية</p>';return}
+list.forEach(p=>{g.innerHTML+=`<div class=card><b>${p.name}</b><div class=price>${p.price}</div><div style=color:#777;font-size:12px>${p.shop}</div></div>`});
 }
-function search(){
- let q=document.getElementById('q').value.trim();
- if(!q){render(products);return}
- let f=products.filter(p=>p.name.includes(q));
- render(f);
+function doSearch(){
+let v=document.getElementById('q').value.trim();
+if(v==''){show(items);return}
+let f=items.filter(x=>x.name.includes(v));
+show(f);
 }
-render(products);
+show(items);
 </script>
 </body>
 </html>
 """
-
 @app.get("/", response_class=HTMLResponse)
-async def home():
-    return HTML
+async def home(): return HTML
